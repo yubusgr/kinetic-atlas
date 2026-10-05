@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4eee3">
+  <meta name="description" content="Kinetik Atlas — çizginin canlı bir heykele dönüştüğü etkileşimli SVG deneyimi.">
+  <title>KINETIC ATLAS — çizgi canlıdır</title>
+  <style>
+    :root {
+      --paper: #f4eee3;
+      --paper-deep: #e8dccb;
+      --ink: #161613;
+      --muted: #625d54;
+      --line: rgba(22, 22, 19, .18);
+      --accent: #ed4b30;
+      --accent-soft: rgba(237, 75, 48, .12);
+      --max: 1440px;
+      --ease: cubic-bezier(.2, .8, .2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--paper); scroll-behavior: smooth; }
+    body {
+      min-width: 320px;
+      margin: 0;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(237, 75, 48, .07), transparent 24rem),
+        linear-gradient(112deg, var(--paper) 0%, #f7f1e7 48%, var(--paper-deep) 100%);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -1;
+      opacity: .24;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.11'/%3E%3C/svg%3E");
+      mix-blend-mode: multiply;
+    }
+    ::selection { color: var(--paper); background: var(--accent); }
+    a { color: inherit; }
+    button { font: inherit; }
+
+    .site-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.1rem clamp(1rem, 4vw, 4rem);
+      border-bottom: 1px solid transparent;
+      transition: background .35s ease, border-color .35s ease;
+    }
+    .site-header.is-scrolled {
+      background: rgba(244, 238, 227, .88);
+      border-color: var(--line);
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+    .wordmark {
+      display: inline-flex;
+      align-items: baseline;
+      gap: .45rem;
+      color: var(--ink);
+      font-size: .78rem;
+      font-weight: 800;
+      letter-spacing: .15em;
+      line-height: 1;
+      text-decoration: none;
+    }
+    .wordmark span { color: var(--accent); }
+    .menu-toggle {
+      display: none;
+      min-width: 2.9rem;
+      min-height: 2.9rem;
+      padding: .6rem;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+    }
+    .primary-nav { display: flex; align-items: center; gap: 1.25rem; }
+    .primary-nav a {
+      position: relative;
+      padding: .35rem 0;
+      color: var(--muted);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: .11em;
+      text-decoration: none;
+      text-transform: uppercase;
+    }
+    .primary-nav a::after {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      background: var(--accent);
+      content: "";
+      transform: scaleX(0);
+      transform-origin: right;
+      transition: transform .3s var(--ease);
+    }
+    .primary-nav a:hover::after, .primary-nav a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+
+    .hero {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+      align-items: center;
+      gap: clamp(2rem, 6vw, 8rem);
+      max-width: var(--max);
+      min-height: 100svh;
+      margin: 0 auto;
+      padding: 8.5rem clamp(1rem, 6vw, 6rem) 5rem;
+    }
+    .hero-copy { position: relative; z-index: 1; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: .6rem;
+      margin: 0 0 1.5rem;
+      color: var(--accent);
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before { width: 2.6rem; height: 2px; background: var(--accent); content: ""; }
+    .hero h1 {
+      max-width: 9ch;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(4.3rem, 12vw, 10.8rem);
+      font-weight: 400;
+      letter-spacing: -.1em;
+      line-height: .8;
+    }
+    .hero h1 em { color: var(--accent); font-style: normal; }
+    .hero-lede {
+      max-width: 29rem;
+      margin: 2rem 0 0 clamp(0rem, 6vw, 6rem);
+      color: var(--muted);
+      font-size: clamp(1rem, 1.4vw, 1.25rem);
+    }
+    .hero-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: .75rem;
+      min-height: 3.2rem;
+      margin: 2.2rem 0 0 clamp(0rem, 6vw, 6rem);
+      padding: .85rem 1.15rem;
+      border: 1px solid var(--ink);
+      background: var(--ink);
+      color: var(--paper);
+      font-size: .76rem;
+      font-weight: 800;
+      letter-spacing: .11em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: transform .25s var(--ease), background .25s ease, color .25s ease;
+    }
+    .hero-cta:hover, .hero-cta:focus-visible { background: var(--accent); border-color: var(--accent); color: var(--paper); transform: translateY(-4px); }
+    .hero-cta svg { width: 1rem; height: 1rem; }
+    .hero-art { position: relative; min-height: 31rem; }
+    .hero-art::before {
+      position: absolute;
+      top: 12%;
+      right: 8%;
+      width: min(26vw, 20rem);
+      aspect-ratio: 1;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+      content: "";
+      opacity: .34;
+    }
+    .hero-art::after {
+      position: absolute;
+      right: 18%;
+      bottom: 10%;
+      width: 4rem;
+      height: 4rem;
+      background: var(--accent);
+      content: "";
+      transform: rotate(45deg);
+    }
+    .hero-art svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .hero-ribbon { fill: none; stroke: var(--accent); stroke-linecap: round; stroke-width: 9; stroke-dasharray: 3 18; animation: drift 8s linear infinite; }
+    .hero-ribbon-secondary { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 1 10; animation: drift 13s linear infinite reverse; }
+    .hero-dot { fill: var(--paper); stroke: var(--ink); stroke-width: 2; }
+    .hero-note { position: absolute; right: 0; bottom: 0; color: var(--muted); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+    @keyframes drift { to { stroke-dashoffset: -120; } }
+
+    .atlas-intro {
+      display: grid;
+      grid-template-columns: minmax(7rem, .35fr) minmax(0, 1fr);
+      gap: 1rem;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 5rem clamp(1rem, 6vw, 6rem) 4rem;
+      border-top: 1px solid var(--line);
+    }
+    .atlas-intro h2 { max-width: 16ch; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.4rem, 5vw, 5.3rem); font-weight: 400; letter-spacing: -.07em; line-height: .9; }
+    .atlas-intro p { max-width: 30rem; margin: .3rem 0 0; color: var(--muted); font-size: clamp(1rem, 1.3vw, 1.15rem); }
+
+    .narrative { position: relative; min-height: 410vh; }
+    .stage-wrap {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: grid;
+      min-height: 100svh;
+      place-items: center;
+      padding: 5rem clamp(1rem, 5vw, 5rem) 4rem;
+      pointer-events: none;
+    }
+    .stage {
+      position: relative;
+      width: min(100%, 1120px);
+      aspect-ratio: 1.75;
+      min-height: min(70svh, 720px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: rgba(249, 244, 235, .54);
+      box-shadow: 18px 22px 0 rgba(22, 22, 19, .06);
+      pointer-events: auto;
+      touch-action: none;
+      cursor: grab;
+      isolation: isolate;
+    }
+    .stage:active { cursor: grabbing; }
+    .stage::before, .stage::after { position: absolute; content: ""; pointer-events: none; }
+    .stage::before { inset: 10%; border: 1px solid rgba(22, 22, 19, .1); border-radius: 50%; }
+    .stage::after { top: 15%; bottom: 15%; left: 50%; width: 1px; background: var(--line); }
+    .stage-grid {
+      position: absolute;
+      inset: 0;
+      opacity: .42;
+      background-image: linear-gradient(rgba(22, 22, 19, .09) 1px, transparent 1px), linear-gradient(90deg, rgba(22, 22, 19, .09) 1px, transparent 1px);
+      background-size: 9% 18%;
+      mask-image: linear-gradient(to bottom, transparent, #000 20%, #000 80%, transparent);
+    }
+    .stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .stage svg * { vector-effect: non-scaling-stroke; }
+    #scaffold { fill: none; stroke: var(--ink); stroke-width: 1; opacity: .2; }
+    #mainPath { fill: none; stroke: var(--accent); stroke-linecap: round; stroke-linejoin: round; stroke-width: 8; filter: drop-shadow(0 8px 7px rgba(237, 75, 48, .12)); }
+    #secondaryPath { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; opacity: .62; }
+    #meshPath { fill: none; stroke: var(--accent); stroke-width: 1.25; opacity: 0; }
+    #beam { fill: var(--accent); opacity: .1; }
+    #core { fill: var(--accent); stroke: var(--ink); stroke-width: 2; }
+    #coreHalo { fill: none; stroke: var(--accent); stroke-width: 1; opacity: .45; }
+    #orbit { fill: none; stroke: var(--ink); stroke-width: 1.2; opacity: .4; transform-box: fill-box; transform-origin: center; }
+    #nodeLayer circle { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+    #burstLines line { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; opacity: 0; }
+    .stage-topline, .stage-caption, .stage-meta { position: absolute; z-index: 3; pointer-events: none; }
+    .stage-topline { top: 1.1rem; left: 1.1rem; display: flex; align-items: center; gap: .75rem; color: var(--muted); font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    .live-dot { width: .55rem; height: .55rem; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 .28rem var(--accent-soft); }
+    .stage-caption { right: 1.1rem; bottom: 1rem; max-width: 15rem; color: var(--muted); font-family: Georgia, "Times New Roman", serif; font-size: .96rem; text-align: right; }
+    .stage-meta { right: 1.1rem; top: 1.1rem; color: var(--accent); font-family: Georgia, "Times New Roman", serif; font-size: clamp(2rem, 4vw, 4rem); line-height: .8; }
+    .drag-hint { position: absolute; bottom: 1rem; left: 1.1rem; color: var(--muted); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; }
+    .chapter-layer { position: relative; z-index: 4; margin-top: -100svh; pointer-events: none; }
+    .chapter {
+      display: grid;
+      grid-template-columns: minmax(7rem, .3fr) minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(1rem, 6vw, 8rem);
+      min-height: 100svh;
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 7rem clamp(1rem, 6vw, 6rem);
+      pointer-events: none;
+    }
+    .chapter > * { pointer-events: auto; }
+    .chapter-index { align-self: start; padding-top: .4rem; color: var(--accent); font-size: .75rem; font-weight: 800; letter-spacing: .13em; }
+    .chapter-index::before { display: block; width: 3rem; height: 2px; margin-bottom: .8rem; background: var(--accent); content: ""; }
+    .chapter-panel { max-width: 30rem; padding: clamp(1.2rem, 2.5vw, 2rem); border-left: 1px solid var(--ink); background: rgba(244, 238, 227, .84); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+    .chapter-panel h3 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(2.3rem, 5vw, 5.7rem); font-weight: 400; letter-spacing: -.08em; line-height: .85; }
+    .chapter-panel p { max-width: 25rem; margin: 1.25rem 0 0; color: var(--muted); font-size: clamp(.98rem, 1.3vw, 1.1rem); }
+    .chapter-tag { display: inline-block; margin-bottom: 1rem; color: var(--accent); font-size: .7rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    .chapter:nth-child(even) { grid-template-columns: minmax(0, 1fr) minmax(7rem, .3fr); }
+    .chapter:nth-child(even) .chapter-panel { grid-column: 1; grid-row: 1; justify-self: end; }
+    .chapter:nth-child(even) .chapter-index { grid-column: 2; grid-row: 1; }
+
+    .control-dock { position: fixed; z-index: 10; right: clamp(1rem, 4vw, 4rem); bottom: 1.2rem; display: flex; align-items: center; gap: .45rem; padding: .45rem; border: 1px solid var(--line); background: rgba(244, 238, 227, .9); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+    .scene-button, .remix-button { min-width: 2.8rem; min-height: 2.8rem; border: 1px solid transparent; background: transparent; color: var(--muted); cursor: pointer; font-size: .7rem; font-weight: 800; letter-spacing: .06em; }
+    .scene-button[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .scene-button:hover, .scene-button:focus-visible, .remix-button:hover, .remix-button:focus-visible { border-color: var(--ink); color: var(--ink); }
+    .remix-button { display: inline-flex; align-items: center; justify-content: center; width: 2.8rem; border-left: 1px solid var(--line); color: var(--accent); font-size: 1.05rem; }
+    .remix-button span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    .closing { max-width: var(--max); margin: 0 auto; padding: 7rem clamp(1rem, 6vw, 6rem) 9rem; border-top: 1px solid var(--line); }
+    .closing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: end; }
+    .closing h2 { max-width: 9ch; margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: clamp(3.4rem, 8vw, 8rem); font-weight: 400; letter-spacing: -.1em; line-height: .82; }
+    .closing h2 em { color: var(--accent); font-style: normal; }
+    .closing p { max-width: 25rem; margin: 0; color: var(--muted); font-size: 1.1rem; }
+    .footer-line { display: flex; justify-content: space-between; gap: 1rem; margin-top: 8rem; padding-top: 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+
+    @media (max-width: 760px) {
+      .site-header { padding: .9rem 1rem; }
+      .menu-toggle { display: inline-grid; place-items: center; }
+      .menu-toggle::before { content: "☰"; font-size: 1.1rem; }
+      .menu-toggle[aria-expanded="true"]::before { content: "×"; font-size: 1.35rem; }
+      .primary-nav { position: absolute; top: calc(100% + 1px); right: 1rem; left: 1rem; display: none; flex-direction: column; align-items: stretch; gap: 0; padding: .5rem; border: 1px solid var(--line); background: rgba(244, 238, 227, .97); box-shadow: 8px 8px 0 rgba(22, 22, 19, .08); }
+      .primary-nav.is-open { display: flex; }
+      .primary-nav a { padding: 1rem; border-bottom: 1px solid var(--line); }
+      .primary-nav a:last-child { border-bottom: 0; }
+      .hero { grid-template-columns: 1fr; align-content: center; gap: 1rem; padding-top: 7rem; }
+      .hero h1 { font-size: clamp(4rem, 20vw, 7.6rem); }
+      .hero-lede, .hero-cta { margin-left: 0; }
+      .hero-art { min-height: 18rem; margin-top: 1rem; }
+      .hero-art::before { top: 4%; right: 11%; width: 11rem; }
+      .hero-art::after { right: 12%; bottom: 2%; width: 2.5rem; height: 2.5rem; }
+      .hero-note { right: auto; left: 0; }
+      .atlas-intro { grid-template-columns: 1fr; padding-top: 4rem; }
+      .narrative { min-height: 420vh; }
+      .stage-wrap { min-height: 82svh; padding: 5.2rem 1rem 3rem; }
+      .stage { width: 100%; min-height: 50svh; aspect-ratio: .93; }
+      .stage-caption { max-width: 10rem; font-size: .8rem; }
+      .chapter-layer { margin-top: -82svh; }
+      .chapter, .chapter:nth-child(even) { grid-template-columns: 1fr; align-content: end; min-height: 105svh; padding: 7rem 1rem 6rem; }
+      .chapter-index, .chapter:nth-child(even) .chapter-index { grid-column: 1; grid-row: 1; }
+      .chapter-panel, .chapter:nth-child(even) .chapter-panel { grid-column: 1; grid-row: 2; justify-self: stretch; max-width: none; }
+      .control-dock { right: 1rem; left: 1rem; justify-content: space-between; }
+      .scene-button { flex: 1; }
+      .closing { padding-top: 5rem; }
+      .closing-grid { grid-template-columns: 1fr; }
+      .footer-line { flex-direction: column; gap: .35rem; margin-top: 5rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+      .hero-ribbon, .hero-ribbon-secondary { animation: none; }
+      .stage { cursor: default; }
+    }
+  </style>
+</head>
+<body data-state="line">
+  <header class="site-header" id="siteHeader">
+    <a class="wordmark" href="#top" aria-label="Kinetic Atlas ana sayfa">KINETIC <span>ATLAS</span></a>
+    <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false" aria-controls="primaryNav" aria-label="Menüyü aç"></button>
+    <nav class="primary-nav" id="primaryNav" aria-label="Ana menü">
+      <a href="#atlas">Atlas</a>
+      <a href="#iz">İz bırak</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="eyebrow">Canlı geometri / 01—04</p>
+        <h1 id="heroTitle">Çizgi <em>canlıdır.</em></h1>
+        <p class="hero-lede">Bir SVG heykelinin oluşumuna gir. Aşağı kaydır, sonra yüzeyin üzerine dokunup onu kendi elinle boz.</p>
+        <a class="hero-cta" href="#chapter-line">Deneyime gir <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8h11M8 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 560 480" role="presentation">
+          <path class="hero-ribbon-secondary" d="M35 280 C120 70 170 410 245 205 S370 45 525 280"/>
+          <path class="hero-ribbon" d="M35 280 C120 70 170 410 245 205 S370 45 525 280"/>
+          <circle class="hero-dot" cx="245" cy="205" r="10"/>
+          <circle class="hero-dot" cx="525" cy="280" r="6"/>
+        </svg>
+        <p class="hero-note">tek bir hat / sonsuz yön</p>
+      </div>
+    </section>
+
+    <section class="atlas-intro" id="atlas" aria-labelledby="atlasTitle">
+      <p class="eyebrow">Atlas / süreç</p>
+      <div>
+        <h2 id="atlasTitle">Şekil, hareketin hafızasıdır.</h2>
+        <p>Her bölümde aynı çizgi başka bir davranış öğrenir: gerilir, bağlanır, akar ve sonunda çevresine enerji saçar. Kontrol sende: kaydır, yakala, yeniden kur.</p>
+      </div>
+    </section>
+
+    <section class="narrative" id="narrative" aria-label="Dört aşamalı kinetik atlas">
+      <div class="stage-wrap">
+        <div class="stage" id="stage" data-state="line" aria-describedby="stageCaption dragHint">
+          <div class="stage-grid" aria-hidden="true"></div>
+          <div class="stage-topline"><span class="live-dot" aria-hidden="true"></span><span id="stageLabel">Çizgi / gerilim</span></div>
+          <div class="stage-meta" id="stageMeta" aria-hidden="true">01</div>
+          <div class="drag-hint" id="dragHint">işaretçinle yüzeyi bük</div>
+          <p class="stage-caption" id="stageCaption">İlk iz, yön arayan tek bir sinyal.</p>
+          <svg id="sculpture" viewBox="0 0 1100 650" role="img" aria-labelledby="stageTitle stageDesc">
+            <title id="stageTitle">Kinetik Atlas canlı SVG heykeli</title>
+            <desc id="stageDesc">Çizgi halinde başlayan, dokunma ve kaydırma ile dönüşen soyut bir SVG heykeli.</desc>
+            <path id="scaffold" d="M90 325H1010M550 85V565M170 165L930 485M170 485L930 165"/>
+            <rect id="beam" x="500" y="300" width="100" height="50" rx="25"/>
+            <path id="secondaryPath" d="M100 325L190 314L280 330L370 304L460 335L550 315L640 341L730 307L820 332L910 318L1000 326"/>
+            <path id="meshPath" d="M100 325L190 314L280 330L370 304L460 335L550 315L640 341L730 307L820 332L910 318L1000 326"/>
+            <path id="mainPath" d="M100 325L190 314L280 330L370 304L460 335L550 315L640 341L730 307L820 332L910 318L1000 326"/>
+            <g id="burstLines" aria-hidden="true"></g>
+            <circle id="coreHalo" cx="550" cy="325" r="42"/>
+            <circle id="core" cx="550" cy="325" r="18"/>
+            <ellipse id="orbit" cx="550" cy="325" rx="180" ry="55" transform="rotate(-12 550 325)"/>
+            <g id="nodeLayer" aria-hidden="true"></g>
+          </svg>
+        </div>
+      </div>
+
+      <div class="chapter-layer">
+        <article class="chapter" data-scene="0" id="chapter-line">
+          <p class="chapter-index">01 / 04</p>
+          <div class="chapter-panel">
+            <span class="chapter-tag">Başlangıç</span>
+            <h3>Çizgi</h3>
+            <p>Gerilim henüz bir ihtimal. Noktalar arası mesafe, heykelin ilk nefesi gibi açık kalır.</p>
+          </div>
+        </article>
+        <article class="chapter" data-scene="1" id="chapter-weave">
+          <p class="chapter-index">02 / 04</p>
+          <div class="chapter-panel">
+            <span class="chapter-tag">Bağlantı</span>
+            <h3>Örgü</h3>
+            <p>Tek çizgi çoğalır; çaprazlar bir yüzey kurar. Her düğüm, bir sonraki harekete tutunur.</p>
+          </div>
+        </article>
+        <article class="chapter" data-scene="2" id="chapter-flow">
+          <p class="chapter-index">03 / 04</p>
+          <div class="chapter-panel">
+            <span class="chapter-tag">Devamlılık</span>
+            <h3>Akış</h3>
+            <p>Yüzey artık bir rota değil, kendi yönünü bulan bir dalga. Renk, çizginin temposuna yetişir.</p>
+          </div>
+        </article>
+        <article class="chapter" data-scene="3" id="chapter-burst">
+          <p class="chapter-index">04 / 04</p>
+          <div class="chapter-panel">
+            <span class="chapter-tag">Açılma</span>
+            <h3>Patlama</h3>
+            <p>Merkez saklanmaz. Biriken hareket dışarı taşar ve harita, bir anda manzaraya dönüşür.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing" id="iz" aria-labelledby="closingTitle">
+      <div class="closing-grid">
+        <h2 id="closingTitle">İzi <em>sen</em> bırak.</h2>
+        <p>Heykelin sabit bir sonu yok. Sayfayı tekrar kaydır, yüzeyi sürükle veya sağ alttaki yeniden kur düğmesine bas. Aynı kurallar, başka bir sonuç.</p>
+      </div>
+      <div class="footer-line"><span>© KINETIC ATLAS / 2026</span><span>SVG ile yapılmıştır / bağımlılık yok</span></div>
+    </section>
+  </main>
+
+  <div class="control-dock" aria-label="Sahne kontrolleri">
+    <button class="scene-button" type="button" data-jump="0" aria-label="Çizgi evresine git" aria-current="true">01</button>
+    <button class="scene-button" type="button" data-jump="1" aria-label="Örgü evresine git" aria-current="false">02</button>
+    <button class="scene-button" type="button" data-jump="2" aria-label="Akış evresine git" aria-current="false">03</button>
+    <button class="scene-button" type="button" data-jump="3" aria-label="Patlama evresine git" aria-current="false">04</button>
+    <button class="remix-button" id="remixButton" type="button" aria-label="Heykeli yeniden kur"><span>Heykeli yeniden kur</span>↻</button>
+  </div>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const header = document.getElementById('siteHeader');
+      const menuToggle = document.getElementById('menuToggle');
+      const primaryNav = document.getElementById('primaryNav');
+      const narrative = document.getElementById('narrative');
+      const stage = document.getElementById('stage');
+      const sculpture = document.getElementById('sculpture');
+      const mainPath = document.getElementById('mainPath');
+      const secondaryPath = document.getElementById('secondaryPath');
+      const meshPath = document.getElementById('meshPath');
+      const core = document.getElementById('core');
+      const coreHalo = document.getElementById('coreHalo');
+      const orbit = document.getElementById('orbit');
+      const beam = document.getElementById('beam');
+      const nodeLayer = document.getElementById('nodeLayer');
+      const burstLines = document.getElementById('burstLines');
+      const stageLabel = document.getElementById('stageLabel');
+      const stageMeta = document.getElementById('stageMeta');
+      const stageCaption = document.getElementById('stageCaption');
+      const stageDesc = document.getElementById('stageDesc');
+      const dragHint = document.getElementById('dragHint');
+      const chapters = [...document.querySelectorAll('.chapter')];
+      const sceneButtons = [...document.querySelectorAll('.scene-button')];
+      const reducedQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let reducedMotion = reducedQuery.matches;
+      let raf = 0;
+      let variation = 0;
+      let lastScene = 0;
+      let pointer = { active: false, x: 550, y: 325, strength: 0 };
+      let dragPointerId = null;
+
+      const scenes = [
+        {
+          key: 'line', label: 'Çizgi / gerilim', caption: 'İlk iz, yön arayan tek bir sinyal.', color: '#ed4b30',
+          points: [[100,325],[190,314],[280,330],[370,304],[460,335],[550,315],[640,341],[730,307],[820,332],[910,318],[1000,326]],
+          secondary: [[100,342],[190,346],[280,335],[370,350],[460,338],[550,351],[640,337],[730,348],[820,336],[910,344],[1000,340]],
+          core: [550,325,18], halo: 43, orbit: 'rotate(-12 550 325)', beam: [500,300,100,50], nodes: 4
+        },
+        {
+          key: 'weave', label: 'Örgü / bağlantı', caption: 'Çizgi çoğalır; boşluklar bir yüzey örer.', color: '#ed4b30',
+          points: [[100,260],[190,410],[280,245],[370,420],[460,230],[550,430],[640,245],[730,415],[820,235],[910,400],[1000,260]],
+          secondary: [[100,400],[190,245],[280,420],[370,230],[460,430],[550,240],[640,420],[730,235],[820,415],[910,250],[1000,395]],
+          core: [550,335,25], halo: 73, orbit: 'rotate(23 550 335)', beam: [515,300,70,70], nodes: 8
+        },
+        {
+          key: 'flow', label: 'Akış / devamlılık', caption: 'Yüzey artık rota değil, kendi yönünü bulan bir dalga.', color: '#ed4b30',
+          points: [[100,390],[190,335],[280,240],[370,205],[460,275],[550,410],[640,465],[730,390],[820,245],[910,190],[1000,245]],
+          secondary: [[100,425],[190,370],[280,275],[370,240],[460,310],[550,445],[640,500],[730,425],[820,280],[910,225],[1000,280]],
+          core: [640,405,33], halo: 108, orbit: 'rotate(-34 640 405)', beam: [602,367,76,76], nodes: 10
+        },
+        {
+          key: 'burst', label: 'Patlama / açılma', caption: 'Biriken hareket dışarı taşar; çizgi manzaraya dönüşür.', color: '#ed4b30',
+          points: [[550,75],[660,220],[865,150],[735,315],[1025,325],[735,385],[865,500],[660,430],[550,575],[440,430],[235,500],[365,385],[75,325],[365,265],[235,150],[440,220]],
+          secondary: [[550,145],[620,260],[790,220],[675,315],[925,325],[675,355],[790,430],[620,380],[550,505],[480,380],[310,430],[425,355],[175,325],[425,285],[310,220],[480,260]],
+          core: [550,325,42], halo: 148, orbit: 'rotate(48 550 325)', beam: [480,255,140,140], nodes: 12
+        }
+      ];
+
+      function makePoints(scene, secondary) {
+        const points = secondary ? scene.secondary : scene.points;
+        return points.map(([x, y], index) => {
+          const phase = variation * .73 + index * .47;
+          const wave = Math.sin(phase) * (secondary ? 5 : 9);
+          let nextX = x + Math.cos(phase * 1.13) * (secondary ? 4 : 7) + wave;
+          let nextY = y + Math.sin(phase * .91) * (secondary ? 4 : 7);
+          if (pointer.active && pointer.strength > 0) {
+            const dx = pointer.x - x;
+            const dy = pointer.y - y;
+            const distance = Math.max(55, Math.hypot(dx, dy));
+            const influence = Math.max(0, 1 - distance / 310) * pointer.strength;
+            nextX += dx * influence * .32;
+            nextY += dy * influence * .32;
+          }
+          return [nextX, nextY];
+        });
+      }
+
+      function mixPoints(from, to, amount) {
+        const count = Math.max(from.length, to.length);
+        const result = [];
+        for (let index = 0; index < count; index += 1) {
+          const a = from[index % from.length];
+          const b = to[index % to.length];
+          result.push([a[0] + (b[0] - a[0]) * amount, a[1] + (b[1] - a[1]) * amount]);
+        }
+        return result;
+      }
+
+      function pointsToPath(points) {
+        if (!points.length) return '';
+        return points.map(([x, y], index) => `${index === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ');
+      }
+
+      function setAttribute(name, value) { return value == null ? '' : String(value); }
+
+      function renderBurstLines(points, amount) {
+        burstLines.innerHTML = '';
+        if (amount < .08) return;
+        const center = [550, 325];
+        points.forEach(([x, y], index) => {
+          const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          const dx = x - center[0];
+          const dy = y - center[1];
+          line.setAttribute('x1', center[0] + dx * .35);
+          line.setAttribute('y1', center[1] + dy * .35);
+          line.setAttribute('x2', center[0] + dx * (0.9 + amount * .22));
+          line.setAttribute('y2', center[1] + dy * (0.9 + amount * .22));
+          line.style.opacity = (amount * .72).toFixed(2);
+          burstLines.appendChild(line);
+        });
+      }
+
+      function renderNodes(points, amount, count) {
+        nodeLayer.innerHTML = '';
+        points.slice(0, Math.min(points.length, count + Math.round(amount * 3))).forEach(([x, y], index) => {
+          const node = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          node.setAttribute('cx', setAttribute('cx', x.toFixed(1)));
+          node.setAttribute('cy', setAttribute('cy', y.toFixed(1)));
+          node.setAttribute('r', index % 3 === 0 ? (4 + amount * 4).toFixed(1) : (2.7 + amount * 2).toFixed(1));
+          node.style.opacity = (0.4 + amount * .58).toFixed(2);
+          nodeLayer.appendChild(node);
+        });
+      }
+
+      function applyScene(progress) {
+        const safeProgress = Math.max(0, Math.min(scenes.length - 1, progress));
+        const fromIndex = Math.floor(safeProgress);
+        const toIndex = Math.min(scenes.length - 1, fromIndex + 1);
+        const amount = safeProgress - fromIndex;
+        const from = scenes[fromIndex];
+        const to = scenes[toIndex];
+        const mainFrom = makePoints(from, false);
+        const mainTo = makePoints(to, false);
+        const secondaryFrom = makePoints(from, true);
+        const secondaryTo = makePoints(to, true);
+        const main = mixPoints(mainFrom, mainTo, amount);
+        const secondary = mixPoints(secondaryFrom, secondaryTo, amount);
+        const coreX = from.core[0] + (to.core[0] - from.core[0]) * amount;
+        const coreY = from.core[1] + (to.core[1] - from.core[1]) * amount;
+        const coreRadius = from.core[2] + (to.core[2] - from.core[2]) * amount;
+        const haloRadius = from.halo + (to.halo - from.halo) * amount;
+        const stageIndex = Math.round(safeProgress);
+        const scene = scenes[stageIndex];
+
+        mainPath.setAttribute('d', pointsToPath(main));
+        secondaryPath.setAttribute('d', pointsToPath(secondary));
+        meshPath.setAttribute('d', pointsToPath(mixPoints(main, secondary, .5)));
+        meshPath.style.opacity = (Math.max(0, safeProgress - .65) * .8).toFixed(2);
+        core.setAttribute('cx', coreX.toFixed(1));
+        core.setAttribute('cy', coreY.toFixed(1));
+        core.setAttribute('r', coreRadius.toFixed(1));
+        coreHalo.setAttribute('cx', coreX.toFixed(1));
+        coreHalo.setAttribute('cy', coreY.toFixed(1));
+        coreHalo.setAttribute('r', haloRadius.toFixed(1));
+        orbit.setAttribute('cx', coreX.toFixed(1));
+        orbit.setAttribute('cy', coreY.toFixed(1));
+        orbit.setAttribute('rx', (180 + safeProgress * 36).toFixed(1));
+        orbit.setAttribute('ry', (55 + safeProgress * 28).toFixed(1));
+        orbit.setAttribute('transform', `rotate(${(-12 + safeProgress * 60).toFixed(1)} ${coreX.toFixed(1)} ${coreY.toFixed(1)})`);
+        beam.setAttribute('x', (coreX - (50 + safeProgress * 20)).toFixed(1));
+        beam.setAttribute('y', (coreY - (25 + safeProgress * 20)).toFixed(1));
+        beam.setAttribute('width', (100 + safeProgress * 40).toFixed(1));
+        beam.setAttribute('height', (50 + safeProgress * 40).toFixed(1));
+        beam.setAttribute('rx', (25 + safeProgress * 20).toFixed(1));
+        renderNodes(main, amount, scene.nodes);
+        renderBurstLines(main, Math.max(0, (safeProgress - 2.25) / .75));
+        body.dataset.state = scene.key;
+        stage.dataset.state = scene.key;
+        stageLabel.textContent = scene.label;
+        stageMeta.textContent = String(stageIndex + 1).padStart(2, '0');
+        stageCaption.textContent = scene.caption;
+        stageDesc.textContent = `${scene.label}. ${scene.caption} SVG path, düğümler ve merkez gerçek zamanlı olarak güncellenir.`;
+        mainPath.style.stroke = scene.color;
+        core.style.fill = scene.color;
+        coreHalo.style.stroke = scene.color;
+        body.style.setProperty('--accent', scene.color);
+        sceneButtons.forEach((button, index) => button.setAttribute('aria-current', index === stageIndex ? 'true' : 'false'));
+        lastScene = stageIndex;
+      }
+
+      function narrativeProgress() {
+        const rect = narrative.getBoundingClientRect();
+        const travel = Math.max(1, rect.height - window.innerHeight);
+        return Math.max(0, Math.min(1, (-rect.top + window.innerHeight * .1) / travel)) * (scenes.length - 1);
+      }
+
+      function renderFromScroll() {
+        raf = 0;
+        header.classList.toggle('is-scrolled', window.scrollY > 24);
+        applyScene(narrativeProgress());
+      }
+
+      function scheduleRender() {
+        if (!raf) raf = window.requestAnimationFrame(renderFromScroll);
+      }
+
+      function mapPointer(event) {
+        const rect = sculpture.getBoundingClientRect();
+        return {
+          x: ((event.clientX - rect.left) / rect.width) * 1100,
+          y: ((event.clientY - rect.top) / rect.height) * 650
+        };
+      }
+
+      function startPointer(event) {
+        dragPointerId = event.pointerId;
+        stage.setPointerCapture(event.pointerId);
+        pointer.active = true;
+        pointer.strength = .95;
+        Object.assign(pointer, mapPointer(event));
+        dragHint.textContent = 'heykel elinin izini taşıyor';
+        applyScene(narrativeProgress());
+      }
+
+      function movePointer(event) {
+        if (!pointer.active || event.pointerId !== dragPointerId) return;
+        Object.assign(pointer, mapPointer(event));
+        applyScene(narrativeProgress());
+      }
+
+      function endPointer(event) {
+        if (event.pointerId !== dragPointerId) return;
+        pointer.active = false;
+        pointer.strength = 0;
+        dragPointerId = null;
+        dragHint.textContent = 'işaretçinle yüzeyi bük';
+        applyScene(narrativeProgress());
+      }
+
+      menuToggle.addEventListener('click', () => {
+        const isOpen = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!isOpen));
+        menuToggle.setAttribute('aria-label', isOpen ? 'Menüyü aç' : 'Menüyü kapat');
+        primaryNav.classList.toggle('is-open', !isOpen);
+      });
+      primaryNav.addEventListener('click', (event) => {
+        if (event.target.matches('a')) {
+          menuToggle.setAttribute('aria-expanded', 'false');
+          menuToggle.setAttribute('aria-label', 'Menüyü aç');
+          primaryNav.classList.remove('is-open');
+        }
+      });
+      sceneButtons.forEach((button) => {
+        button.addEventListener('click', () => {
+          const index = Number(button.dataset.jump);
+          chapters[index].scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'center' });
+        });
+      });
+      document.getElementById('remixButton').addEventListener('click', () => {
+        variation += 1 + Math.floor(Math.random() * 4);
+        stage.classList.remove('is-remixing');
+        void stage.offsetWidth;
+        stage.classList.add('is-remixing');
+        applyScene(narrativeProgress());
+      });
+      stage.addEventListener('pointerdown', startPointer);
+      stage.addEventListener('pointermove', movePointer);
+      stage.addEventListener('pointerup', endPointer);
+      stage.addEventListener('pointercancel', endPointer);
+      stage.addEventListener('pointerleave', (event) => { if (pointer.active) endPointer(event); });
+      window.addEventListener('scroll', scheduleRender, { passive: true });
+      window.addEventListener('resize', scheduleRender, { passive: true });
+      reducedQuery.addEventListener?.('change', (event) => { reducedMotion = event.matches; scheduleRender(); });
+      applyScene(0);
+    })();
+  </script>
+</body>
+</html>
